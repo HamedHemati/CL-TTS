@@ -4,7 +4,7 @@ import numpy as np
 
 
 # ========== Tacotron2Loss
-class Tacotron2Loss():
+class Tacotron2Loss:
     def __init__(self, n_frames_per_step, reduction, pos_weight, device):
         self.n_frames_per_step = n_frames_per_step
         self.device = device

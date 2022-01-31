@@ -181,7 +181,7 @@ class Decoder(nn.Module):
         PARAMS
         ------
         memory: Encoder outputs
-        mask: Mask for padded data if training, expects None for inference
+        mask: Mask for padded benchmarks if training, expects None for inference
         """
         B = memory.size(0)
         MAX_TIME = memory.size(1)

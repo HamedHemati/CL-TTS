@@ -169,9 +169,8 @@ class ForwardAttention(nn.Module):
             self.alpha[:, :-1].clone().to(alignment.device),
             (1, 0, 0, 0))
         # compute transition potentials
-        alpha = ((1 - self.u) * self.alpha
-                 + self.u * fwd_shifted_alpha
-                 + 1e-8) * alignment
+        alpha = ((1 - self.u) * self.alpha +
+                 self.u * fwd_shifted_alpha + 1e-8) * alignment
         # force incremental alignment
         if not self.training and self.forward_attn_mask:
             _, n = fwd_shifted_alpha.max(1)
@@ -204,7 +203,7 @@ class ForwardAttention(nn.Module):
                 query, self.processed_inputs)
         # apply masking
         # if mask is not None:
-        #     attention.data.masked_fill_(~mask, self._mask_value)
+        #     attention.benchmarks.masked_fill_(~mask, self._mask_value)
         # apply windowing - only in eval mode
         if not self.training and self.windowing:
             attention = self.apply_windowing(attention, inputs)
@@ -271,9 +270,11 @@ class GMMAttentionV2(nn.Module):
 
     def init_layers(self):
         # bias mean
-        torch.nn.init.constant_(self.N_a[2].bias[(2 * self.K):(3 * self.K)], 1.)
+        torch.nn.init.constant_(
+            self.N_a[2].bias[(2 * self.K):(3 * self.K)], 1.)
         # bias std
-        torch.nn.init.constant_(self.N_a[2].bias[self.K:(2 * self.K)], 10)
+        torch.nn.init.constant_(
+            self.N_a[2].bias[self.K:(2 * self.K)], 10)
 
     def init_states(self, inputs):
         offset = 50
@@ -410,7 +411,7 @@ class LSAttention(nn.Module):
         memory: encoder outputs
         processed_memory: processed encoder outputs
         attention_weights_cat: previous and cummulative attention weights
-        mask: binary mask for padded data
+        mask: binary mask for padded benchmarks
         """
         alignment = self.get_alignment_energies(
             attention_hidden_state, processed_memory, attention_weights_cat)
