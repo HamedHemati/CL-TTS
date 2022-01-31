@@ -1,2 +1,2 @@
 # CL-TTS
-Continual Learning to Text-to-Speech Synthesis
+Continual Learning for Text-to-Speech Synthesis

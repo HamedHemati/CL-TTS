@@ -33,16 +33,12 @@ model:
   use_encoder: True
   use_residual_encoder: True
 
-  n_mel_channels: 128
-
 # ==================== Audio parameters
-audio_params:
+ap_params:
   sample_rate: 22050
   n_fft: 1024
-  win_length: 1024
+  win_length: Null
   hop_length: 275
   n_mels: 128
   f_min: 0
-  f_max: 8000
-  n_mfcc: 40
-  griffinlim_iters: 100
+  f_max: Null
