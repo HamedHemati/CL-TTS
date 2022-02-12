@@ -6,8 +6,22 @@ VCTK-Speaker-Inc[Tac2NV]:
   trainer: "speaker_inc_trainer"
   metrics: []
   seed: 0
+  num_workers: 2
+  train_mb_size: 32
+  train_epochs: 40
+
+  eval_mb_size: 64
+  eval_every: -1
+  peval_mode: "epoch"
+
+
+  # ==================== Optimizer
+  optimizer: "Adam"
+  optimizer_params:
+    lr: 0.001
 
   # ==================== Strategy
+  strategy: "naive"
 
   # ==================== Benchmark
   benchmark: "VCTK-Speaker-Inc"
@@ -16,9 +30,9 @@ VCTK-Speaker-Inc[Tac2NV]:
   data_folder: "wavs"
   metafile_name: "metadata.txt"
   file_format: "wav"
-  speaker_list: [ "p316",
-                  "p336",
-                  "p248" ]
+  speaker_list: ["p316",
+                 "p336",
+                 "p248"]
 
   # ==================== Model
   model_name: "Tacotron2NV"

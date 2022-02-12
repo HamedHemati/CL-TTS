@@ -7,5 +7,4 @@ class Trainer(BaseTrainer):
 
     def run(self):
         for exp in self.benchmark.train_stream:
-            # self.strategy.train(exp)
-            print(set(exp.dataset.targets))
+            self.strategy.train(exp)

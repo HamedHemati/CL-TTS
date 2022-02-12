@@ -18,7 +18,9 @@ class Naive(BaseStrategy):
             params: Dict,
             forward_func: Callable,
             criterion_func: Callable,
+            collator: Callable,
             *,
+            num_workers: int = 4,
             device="cpu",
             plugins=None,
             evaluator: EvaluationPlugin = default_evaluator,
@@ -29,6 +31,8 @@ class Naive(BaseStrategy):
             params=params,
             forward_func=forward_func,
             criterion_func=criterion_func,
+            collator=collator,
+            num_workers=num_workers,
             device=device,
             plugins=plugins,
             evaluator=evaluator
