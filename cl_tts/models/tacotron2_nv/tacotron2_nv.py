@@ -6,6 +6,7 @@ from math import sqrt
 from .encoder import Encoder
 from .decoder import Decoder, Postnet
 from .modules import get_mask_from_lengths
+from .tacotron2_loss import Tacotron2Loss
 
 
 class Tacotron2NV(nn.Module):
@@ -124,10 +125,43 @@ class Tacotron2NV(nn.Module):
         return mel_outputs_postnet, mel_lengths, alignments
 
 
-def get_tacotron2_nv(params, n_speakers, n_symbols):
+# Helper classes for forward and criterion functions
+
+class Tac2NvForwardFunc:
+    def __call__(self, model: Tacotron2NV, m_batch, speaker_ids):
+        return model(
+            inputs=m_batch["transcripts"],
+            input_lengths=m_batch["trans_lengths"],
+            melspecs=m_batch["melspecs"],
+            melspec_lengths=m_batch["melspec_lengths"],
+            speaker_ids=speaker_ids
+        )
+
+class Tac2NvCriterionFunc:
+    def __init__(self, params, device):
+        self.criterion = Tacotron2Loss(
+            params["model"]["n_frames_per_step"],
+            params["model"]["reduction"],
+            params["model"]["pos_weight"],
+            device
+        )
+
+    def __call__(self, model_outputs, m_batch, speaker_ids):
+        targets = m_batch["melspecs"], m_batch["stop_targets"]
+        return self.criterion(
+            model_output=model_outputs,
+            targets=targets,
+            mel_len=m_batch["melspec_lengths"],
+        )
+
+
+# Helper function for model initialization
+def get_tacotron2_nv(params, n_speakers, n_symbols, device):
     params["model"]["num_speakers"] = n_speakers
     params["model"]["n_symbols"] = n_symbols
     params["model"]["n_mel_channels"] = params["ap_params"]["n_mels"]
-    tac2_nv = Tacotron2NV(params["model"])
+    model = Tacotron2NV(params["model"])
+    forward_func = Tac2NvForwardFunc()
+    criterion_func = Tac2NvCriterionFunc(params, device)
 
-    return tac2_nv
+    return model, forward_func, criterion_func

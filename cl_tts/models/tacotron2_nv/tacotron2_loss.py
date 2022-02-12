@@ -24,9 +24,9 @@ class Tacotron2Loss:
         outputs, postnet_outputs, stop_values, _ = model_output
         mel, stop_labels = targets[0], targets[1]
 
-        mel=mel.transpose(1,2)
-        outputs = outputs.transpose(1,2)
-        postnet_outputs = postnet_outputs.transpose(1,2)
+        mel = mel.transpose(1, 2)
+        outputs = outputs.transpose(1, 2)
+        postnet_outputs = postnet_outputs.transpose(1, 2)
 
         # Mel-spec loss
         l1_loss = self.l1_criterion(postnet_outputs, mel) + \

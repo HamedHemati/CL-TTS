@@ -3,6 +3,7 @@ import yaml
 import torch
 import copy
 
+import torch
 from avalanche.training.plugins import EvaluationPlugin
 from avalanche.logging import InteractiveLogger, WandBLogger
 
@@ -37,7 +38,17 @@ class BaseTrainer:
         # Get model
         n_symbols = self.benchmark_meta["n_symbols"]
         n_speakers = self.benchmark_meta["n_speakers"]
-        model, criterion = get_model(params, n_symbols, n_speakers, self.device)
+        model, forward_func, criterion_func = get_model(params,
+                                                        n_symbols,
+                                                        n_speakers,
+                                                        self.device)
+
+        # Optimizer
+        if params["optimizer"] == "Adam":
+            optimizer = torch.optim.Adam(model.parameters(),
+                                         **params["optimizer_params"])
+        else:
+            raise NotImplementedError
 
         # ====================================
         #          Evaluation Plugin
@@ -72,7 +83,10 @@ class BaseTrainer:
         self.strategy = get_strategy(
             self.params,
             model,
-            criterion,
+            optimizer,
+            forward_func,
+            criterion_func,
+            self.benchmark_meta["collator"],
             self.evaluation_plugin,
             self.device
         )

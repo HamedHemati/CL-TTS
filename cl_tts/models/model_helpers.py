@@ -5,14 +5,14 @@ from .tacotron2_nv.tacotron2_loss import Tacotron2Loss
 def get_model(params, n_symbols, n_speakers, device):
     # -----> Tacotron2NV
     if params["model_name"] == "Tacotron2NV":
-        model = get_tacotron2_nv(params=params, n_symbols=n_symbols,
-                                 n_speakers=n_speakers)
-        criterion = Tacotron2Loss(params["model"]["n_frames_per_step"],
-                                  params["model"]["reduction"],
-                                  params["model"]["pos_weight"],
-                                  device)
+        model, forward_func, criterion_func = get_tacotron2_nv(
+            params=params,
+            n_symbols=n_symbols,
+            n_speakers=n_speakers,
+            device=device
+        )
 
     else:
         raise NotImplementedError()
 
-    return model, criterion
+    return model, forward_func, criterion_func
