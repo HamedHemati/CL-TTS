@@ -14,8 +14,9 @@ from cl_tts.strategies import get_strategy
 
 
 class BaseTrainer:
-    r"""Base class Trainer. All trainers should inherit from this class."""
-
+    """
+    Base class Trainer. All trainers should inherit from this class.
+    """
     def __init__(self, args, params, experiment_name):
         self.params = params
 
@@ -30,11 +31,12 @@ class BaseTrainer:
         print("Device: ", self.device)
 
         # Initialize benchmark
-        self.benchmark = get_benchmark(self.args, self.params)
+        self.benchmark, self.benchmark_meta =\
+            get_benchmark(self.args, self.params)
 
         # Get model
-        n_symbols = None
-        n_speakers = None
+        n_symbols = self.benchmark_meta["n_symbols"]
+        n_speakers = self.benchmark_meta["n_speakers"]
         model, criterion = get_model(params, n_symbols, n_speakers, self.device)
 
         # ====================================
@@ -110,7 +112,7 @@ class BaseTrainer:
             except:
                 print(f"Could not load weights for {name}")
 
-    def start(self):
+    def run(self):
         pass
 
     def generate_samples(self):

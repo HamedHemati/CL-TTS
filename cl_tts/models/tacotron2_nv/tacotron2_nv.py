@@ -127,7 +127,7 @@ class Tacotron2NV(nn.Module):
 def get_tacotron2_nv(params, n_speakers, n_symbols):
     params["model"]["num_speakers"] = n_speakers
     params["model"]["n_symbols"] = n_symbols
-    params["model"]["n_mel_channels"] = params["audio_params"]["n_mels"]
+    params["model"]["n_mel_channels"] = params["ap_params"]["n_mels"]
     tac2_nv = Tacotron2NV(params["model"])
 
     return tac2_nv
