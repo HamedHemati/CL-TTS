@@ -1,44 +1,71 @@
-# ==================== Model
-model:
-  mask_padding: False
-  symbols_embedding_dim: 512
-  encoder_kernel_size: 5
-  encoder_n_convolutions: 3
-  encoder_embedding_dim: 512
-  attention_rnn_dim: 1024
-  attention_params:
-    attention_type: "ForwardAttention"
-    attention_dim: 128
-    attention_location_n_filters: 32
-    attention_location_kernel_size: 31
-    windowing: False
-    norm: "softmax"
-    forward_attn: True
-    trans_agent: True
-    forward_attn_mask: True
-  n_frames_per_step: 1
-  decoder_rnn_dim: 1024
-  prenet_dim: 256
-  max_decoder_steps: 2000
-  gate_threshold: 0.5
-  p_attention_dropout: 0.1
-  p_decoder_dropout: 0.1
-  postnet_embedding_dim: 512
-  postnet_kernel_size: 5
-  postnet_n_convolutions: 5
-  decoder_no_early_stopping: False
-  use_speaker_embedding: True
-  speaker_embedding_dim: 32
+VCTK-Speaker-Inc[Tac2NV]:
+  # ==================== Tunable
+  tunable_parameters: Null
 
-  use_encoder: True
-  use_residual_encoder: True
+  # ==================== Training
+  trainer: "speaker_inc_trainer"
+  metrics: []
+  seed: 0
 
-# ==================== Audio parameters
-ap_params:
-  sample_rate: 22050
-  n_fft: 1024
-  win_length: Null
-  hop_length: 275
-  n_mels: 128
-  f_min: 0
-  f_max: Null
+  # ==================== Strategy
+
+  # ==================== Benchmark
+  benchmark: "VCTK-Speaker-Inc"
+  datasets_root: "/raid/hhemati/Datasets/Speech/CL-TTS"
+  dataset_name: "VCTK"
+  data_folder: "wavs"
+  metafile_name: "metadata.txt"
+  file_format: "wav"
+  speaker_list: [ "p316",
+                  "p336",
+                  "p248" ]
+
+  # ==================== Model
+  model_name: "Tacotron2NV"
+  model:
+    mask_padding: False
+    symbols_embedding_dim: 512
+    encoder_kernel_size: 5
+    encoder_n_convolutions: 3
+    encoder_embedding_dim: 512
+    attention_rnn_dim: 1024
+    attention_params:
+      attention_type: "ForwardAttention"
+      attention_dim: 128
+      attention_location_n_filters: 32
+      attention_location_kernel_size: 31
+      windowing: False
+      norm: "softmax"
+      forward_attn: True
+      trans_agent: True
+      forward_attn_mask: True
+    n_frames_per_step: 1
+    decoder_rnn_dim: 1024
+    prenet_dim: 256
+    max_decoder_steps: 2000
+    gate_threshold: 0.5
+    p_attention_dropout: 0.1
+    p_decoder_dropout: 0.1
+    postnet_embedding_dim: 512
+    postnet_kernel_size: 5
+    postnet_n_convolutions: 5
+    decoder_no_early_stopping: False
+
+    use_speaker_embedding: True
+    speaker_embedding_dim: 32
+
+    use_encoder: True
+    use_residual_encoder: True
+
+    reduction: "none"
+    pos_weight: 1.0
+
+  # ==================== Audio parameters
+  ap_params:
+    sample_rate: 22050
+    n_fft: 1024
+    win_length: Null
+    hop_length: 275
+    n_mels: 128
+    f_min: 0
+    f_max: Null
