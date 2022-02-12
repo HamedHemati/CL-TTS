@@ -8,6 +8,7 @@ from cl_tts.utils.ap import AudioProcessor
 from cl_tts.benchmarks.datasets.multispeaker_dataset import MultiSpeakerDataset
 from cl_tts.benchmarks.datasets.dataset_utils.text_processors.\
     eng.english_text_proessor import EnglishTextProcessor
+from cl_tts.benchmarks.datasets.dataset_utils.collator import TTSColator
 
 
 def get_vctk_speaker_incremental_benchmark(
@@ -18,6 +19,7 @@ def get_vctk_speaker_incremental_benchmark(
         file_format,
         speaker_list,
         audio_params,
+        reduction_factor
 ):
     # Audio processor
     audio_processor = AudioProcessor(audio_params)
@@ -53,9 +55,13 @@ def get_vctk_speaker_incremental_benchmark(
         speaker_datasets.append(ds_target_speaker)
 
     benchmark = dataset_benchmark(speaker_datasets, speaker_datasets)
+
+    collator = TTSColator(reduction_factor, audio_processor)
+
     benchmark_meta = {
         "speaker_durations": speaker_durations,
         "n_symbols": len(english_text_processor.symbols),
-        "n_speakers": len(speaker_list)
+        "n_speakers": len(speaker_list),
+        "collator": collator,
     }
     return benchmark, benchmark_meta

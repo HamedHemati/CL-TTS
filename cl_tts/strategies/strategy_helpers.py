@@ -1,3 +1,44 @@
+from .naive import Naive
 
-def get_strategy(params, model, criterion, evaluation_plugin, device):
-    pass
+
+def get_strategy(
+        params,
+        model,
+        optimizer,
+        forward_func,
+        criterion_func,
+        collator,
+        evaluation_plugin,
+        device
+):
+    """
+    Initializes strategy for a given model.
+
+    :param params:
+    :param model:
+    :param optimizer:
+    :param forward_func:
+    :param criterion_func:
+    :param collator:
+    :param evaluation_plugin:
+    :param device:
+    :return:
+    """
+
+    strategy = None
+    if params["strategy"] == "naive":
+        strategy = Naive(
+            model=model,
+            optimizer=optimizer,
+            params=params,
+            forward_func=forward_func,
+            criterion_func=criterion_func,
+            collator=collator,
+            num_workers=params["num_workers"],
+            device=device,
+            evaluator=evaluation_plugin,
+        )
+    else:
+        raise NotImplementedError
+
+    return strategy

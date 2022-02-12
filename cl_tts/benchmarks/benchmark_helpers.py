@@ -11,7 +11,8 @@ def get_benchmark(args, params):
             params["metafile_name"],
             params["file_format"],
             params["speaker_list"],
-            params["ap_params"]
+            params["ap_params"],
+            params["model"]["n_frames_per_step"]
         )
 
     else:
