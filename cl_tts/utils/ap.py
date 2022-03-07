@@ -1,5 +1,6 @@
 import torch
 import torchaudio
+import librosa
 
 torchaudio.set_audio_backend("sox_io")
 
@@ -76,6 +77,25 @@ class AudioProcessor:
             x = torchaudio.transforms.Resample(
                 orig_freq=sr,
                 new_freq=self.params["sample_rate"])(x)
+        return x
+
+    @staticmethod
+    def trim_margin_silence(x, ref_level_db=26):
+        r"""Trims margin silence of a waveform.
+
+        Parameters:
+        x (torch.tensor): input waveform
+        ref_level_db: reference level in decibel
+
+        Returns:
+        torch.tensor: trimmed waveform
+        """
+        trimmed_x = librosa.effects.trim(x.numpy(),
+                                         top_db=ref_level_db,
+                                         frame_length=1024,
+                                         hop_length=256)[0]
+        x = torch.FloatTensor(trimmed_x)
+
         return x
 
     def spec(self, x):
