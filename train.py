@@ -54,5 +54,6 @@ if __name__ == "__main__":
     params = load_params(args.hparams_path)
     params = params[args.config]
 
+    params["num_workers"] = args.num_workers
     # Run
     run(args, params)

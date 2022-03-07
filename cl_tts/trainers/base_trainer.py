@@ -34,10 +34,11 @@ class BaseTrainer:
         # Initialize benchmark
         self.benchmark, self.benchmark_meta =\
             get_benchmark(self.args, self.params)
+        self.benchmark_meta["ap_params"] = params["ap_params"]
 
         # Get model
         n_symbols = self.benchmark_meta["n_symbols"]
-        n_speakers = self.benchmark_meta["n_speakers"]
+        n_speakers = self.benchmark_meta["n_speakers_dataset"]
         model, forward_func, criterion_func = get_model(params,
                                                         n_symbols,
                                                         n_speakers,
@@ -68,7 +69,8 @@ class BaseTrainer:
 
         # Initialize metrics
         metrics = params["metrics"]
-        metrics_list = get_metrics(metrics)
+        metrics_list = get_metrics(metrics, self.params, self.benchmark_meta,
+                                   self.log_to_wandb)
 
         # Set evaluation plugin
         self.evaluation_plugin = EvaluationPlugin(

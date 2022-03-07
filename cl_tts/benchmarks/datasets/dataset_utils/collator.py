@@ -20,7 +20,7 @@ class TTSColator:
         :return: (batch_data, speaker_ids)
         """
         # Compute text lengths and
-        trans_lengths = torch.LongTensor([len(t[1]) for t in batch])
+        trans_lengths = torch.LongTensor([len(t[0]) for t in batch])
 
         # Sort items w.r.t. the transcript length for RNN efficiency
         trans_lengths, ids_sorted_decreasing = torch.sort(

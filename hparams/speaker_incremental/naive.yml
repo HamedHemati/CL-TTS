@@ -4,21 +4,22 @@ VCTK-Speaker-Inc[Tac2NV]:
 
   # ==================== Training
   trainer: "speaker_inc_trainer"
-  metrics: []
-  seed: 0
-  num_workers: 2
-  train_mb_size: 32
-  train_epochs: 40
+  metrics: ["loss", "audio_sample"]
+  synthesize_every: 10
+  audio_sample_transcript: "This is a sample text."
 
-  eval_mb_size: 64
+  seed: 0
+  train_mb_size: 64
+  train_epochs: 100
+
+  eval_mb_size: 32
   eval_every: -1
   peval_mode: "epoch"
-
 
   # ==================== Optimizer
   optimizer: "Adam"
   optimizer_params:
-    lr: 0.001
+    lr: 0.0001
 
   # ==================== Strategy
   strategy: "naive"
@@ -30,9 +31,14 @@ VCTK-Speaker-Inc[Tac2NV]:
   data_folder: "wavs"
   metafile_name: "metadata.txt"
   file_format: "wav"
-  speaker_list: ["p316",
-                 "p336",
-                 "p248"]
+  speaker_lists: [
+    ["p225", "p229", "p233", "p238", "p243", "p247", "p251", "p255", "p259",
+     "p263", "p267", "p271", "p275", "p279", "p283", "p287", "p294", "p299",
+     "p303", "p307", "p312", "p317", "p329", "p335", "p341", "p351", "p363",
+     "p226", "p230", "p234"],
+    ["p362"],
+    ["p376"]
+  ]
 
   # ==================== Model
   model_name: "Tacotron2NV"
@@ -83,3 +89,4 @@ VCTK-Speaker-Inc[Tac2NV]:
     n_mels: 128
     f_min: 0
     f_max: Null
+    trim_margin_silence_thr: 22

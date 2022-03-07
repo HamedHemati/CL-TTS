@@ -10,15 +10,19 @@ class MultiSpeakerDataset(Dataset):
             datasets_root,
             dataset_name,
             speaker_list,
+            speaker_to_id,
             audio_processor,
             *,
+            trim_margin_silence_thr=-1,
             data_folder="audios",
             metafile_name="metadata.txt",
             file_format=None,
             transcript_processor=None
     ):
         self.datasets_root = datasets_root
+        self.speaker_to_id = speaker_to_id
         self.dataset_path = os.path.join(datasets_root, dataset_name)
+        self.trim_margin_silence_thr = trim_margin_silence_thr
         self.data_folder = data_folder
         self.file_format = file_format
         self.transcript_processor = transcript_processor
@@ -36,7 +40,6 @@ class MultiSpeakerDataset(Dataset):
 
         # List of speakers (used as targets)
         speakers = [l.split("|")[0] for l in all_lines]
-        self.speaker_to_id = {spk: i for i, spk in enumerate(set(speakers))}
 
         # List of file names
         file_names = [l.split("|")[1] for l in all_lines]
@@ -93,7 +96,12 @@ class MultiSpeakerDataset(Dataset):
         file_path = self.wav_paths[index]
         waveform = self.load_waveform(file_path)
 
-        # TODO: add trim-silence
+        # Trim silence
+        if self.trim_margin_silence_thr != -1:
+            waveform = self.ap.trim_margin_silence(
+                waveform,
+                ref_level_db=self.trim_margin_silence_thr
+            )
 
         return transcript, waveform, speaker_id
 
