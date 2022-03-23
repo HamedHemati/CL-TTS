@@ -24,8 +24,8 @@ LJSpeech-IID[Tac2NV]:
   dataset_name: "LJSpeech-1.1"
   data_folder: "wavs"
 
-  metafile_name: "metadata.txt"
-  input_type: "char"   # char/phoneme
+  metafile_name: "metadata_phoneme.txt"
+  input_type: "phoneme"   # char/phoneme
 
   file_format: "wav"
   speaker_lists: [

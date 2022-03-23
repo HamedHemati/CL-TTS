@@ -16,7 +16,7 @@ class G2PEN:
         return self.phone_to_index_list(text)
 
     def process_for_inference(self, text):
-        return self.text_to_phone(text)[0]
+        return self.text_to_phone_to_index_list(text)
 
     def text_to_phone(self, text):
         """Converts text to phoneme."""
@@ -54,7 +54,7 @@ class G2PEN:
         sequence = [self.char_to_id[s] for s in list(phones) if
                     self._should_keep_char(s)]
 
-        return sequence, phones
+        return sequence
 
     def get_symbol_list(self):
         return self.symbols
