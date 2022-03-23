@@ -2,10 +2,10 @@ import wandb
 import torch
 import os
 
-from .base_trainer import BaseTrainer
+from .base_cl_trainer import BaseCLTrainer
 
 
-class Trainer(BaseTrainer):
+class Trainer(BaseCLTrainer):
     def __init__(self, args, params, experiment_name):
         super().__init__(args, params, experiment_name)
 

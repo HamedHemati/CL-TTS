@@ -1,46 +1,34 @@
-VCTK-Speaker-Inc[Tac2NV]:
+LJSpeech-IID[Tac2NV]:
   description: ""
 
   # ==================== Tunable
   tunable_parameters: Null
 
   # ==================== Training
-  trainer: "speaker_inc_trainer"
-  metrics: ["loss", "audio_sample"]
-  synthesize_every: 10
+  trainer: "iid_trainer"
+  synthesize_every: 1
   audio_sample_transcript: "This is a sample text."
 
   seed: 0
-  train_mb_size: 64
+  train_mb_size: 80
   train_epochs: 100
-
-  eval_mb_size: 32
-  eval_every: -1
-  peval_mode: "epoch"
 
   # ==================== Optimizer
   optimizer: "Adam"
   optimizer_params:
     lr: 0.0001
 
-  # ==================== Strategy
-  strategy: "naive"
-
   # ==================== Benchmark
-  benchmark: "VCTK-Speaker-Inc"
+  benchmark: "LJSpeech-Single-Speaker"
   datasets_root: "/raid/hhemati/Datasets/Speech/CL-TTS"
-  dataset_name: "VCTK"
+  dataset_name: "LJSpeech-1.1"
   data_folder: "wavs"
   metafile_name: "metadata.txt"
   file_format: "wav"
   speaker_lists: [
-    ["p225", "p229", "p233", "p238", "p243", "p247", "p251", "p255", "p259",
-     "p263", "p267", "p271", "p275", "p279", "p283", "p287", "p294", "p299",
-     "p303", "p307", "p312", "p317", "p329", "p335", "p341", "p351", "p363",
-     "p226", "p230", "p234"],
-    ["p362"],
-    ["p376"]
+    [ "lj_speaker"]
   ]
+  input_type: "char"   # char/phoneme
 
   # ==================== Model
   model_name: "Tacotron2NV"

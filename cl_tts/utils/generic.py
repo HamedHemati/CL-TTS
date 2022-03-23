@@ -47,6 +47,8 @@ def get_trainer(trainer_name):
 
 def get_experiment_name(params):
     experiment_name = f'{params["trainer"]}_'
+    experiment_name += f'{params["benchmark"]}_'
+    experiment_name += f'{params["model_name"]}_'
     experiment_name += f's{params["seed"]}'
 
     return experiment_name

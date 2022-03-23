@@ -12,7 +12,7 @@ from cl_tts.benchmarks.datasets.dataset_utils.text_processors.\
 from cl_tts.benchmarks.datasets.dataset_utils.collator import TTSColator
 
 
-def get_vck_speakers_dict(datasets_root, dataset_name, metafile_name):
+def get_speakers_dict(datasets_root, dataset_name, metafile_name):
     dataset_path = os.path.join(datasets_root, dataset_name)
     meta_data_path = os.path.join(dataset_path, metafile_name)
     with open(meta_data_path) as file:
@@ -27,7 +27,7 @@ def get_vck_speakers_dict(datasets_root, dataset_name, metafile_name):
     return speaker_to_id
 
 
-def get_vctk_speaker_incremental_benchmark(
+def get_speaker_incremental_benchmark(
         datasets_root,
         dataset_name,
         data_folder,
@@ -35,18 +35,15 @@ def get_vctk_speaker_incremental_benchmark(
         file_format,
         speaker_lists,
         audio_params,
-        reduction_factor
+        reduction_factor,
+        audio_processor,
+        transcript_processor,
+        collator
 ):
-    # Audio processor
-    audio_processor = AudioProcessor(audio_params)
-
-    # Text processor
-    transcript_processor = EnglishTextProcessor()
-
-    speaker_to_id = get_vck_speakers_dict(datasets_root, dataset_name,
-                                          metafile_name)
+    speaker_to_id = get_speakers_dict(datasets_root, dataset_name,
+                                      metafile_name)
     speaker_datasets = []
-    speaker_durations = []
+    durations_per_exp = []
     for speaker_list in speaker_lists:
         # Create dataset
         multispk_dataset = MultiSpeakerDataset(
@@ -72,15 +69,13 @@ def get_vctk_speaker_incremental_benchmark(
 
         # Compute durations
         durations = multispk_dataset.get_durations(indices=indices)
-        speaker_durations.append(durations)
+        durations_per_exp.append(durations)
 
         # Target speaker dataset
         ds_target_speaker = AvalancheSubset(ds, indices=indices)
         speaker_datasets.append(ds_target_speaker)
 
     benchmark = dataset_benchmark(speaker_datasets, speaker_datasets)
-
-    collator = TTSColator(reduction_factor, audio_processor)
 
     # Speakers in each experience
     speakers_per_exp = []
@@ -92,7 +87,7 @@ def get_vctk_speaker_incremental_benchmark(
         speakerids_per_exp.append(speaker_ids)
 
     benchmark_meta = {
-        "speaker_durations": speaker_durations,
+        "durations_per_exp": durations_per_exp,
         "transcript_processor": transcript_processor,
         "n_symbols": len(transcript_processor.symbols),
         "n_speakers_benchmark": len(speaker_list),
@@ -101,5 +96,87 @@ def get_vctk_speaker_incremental_benchmark(
         "speakers_per_exp": speakers_per_exp,
         "speakerids_per_exp": speakerids_per_exp,
     }
+
+    return benchmark, benchmark_meta
+
+
+# ==========> Helper Functions
+
+# VCTK
+def get_vctk_speaker_incremental_benchmark(
+        datasets_root,
+        dataset_name,
+        data_folder,
+        metafile_name,
+        file_format,
+        speaker_lists,
+        audio_params,
+        reduction_factor,
+        input_type,
+):
+    # Audio processor
+    audio_processor = AudioProcessor(audio_params)
+
+    # Text processor
+    if input_type == "char":
+        transcript_processor = EnglishTextProcessor()
+    else:
+        raise NotImplementedError()
+
+    collator = TTSColator(reduction_factor, audio_processor)
+
+    benchmark, benchmark_meta = get_speaker_incremental_benchmark(
+        datasets_root,
+        dataset_name,
+        data_folder,
+        metafile_name,
+        file_format,
+        speaker_lists,
+        audio_params,
+        reduction_factor,
+        audio_processor,
+        transcript_processor,
+        collator
+    )
+
+    return benchmark, benchmark_meta
+
+
+# LJSpeech
+def get_ljspeech_single_speaker_benchmark(
+        datasets_root,
+        dataset_name,
+        data_folder,
+        metafile_name,
+        file_format,
+        speaker_lists,
+        audio_params,
+        reduction_factor,
+        input_type,
+):
+    # Audio processor
+    audio_processor = AudioProcessor(audio_params)
+
+    # Text processor
+    if input_type == "char":
+        transcript_processor = EnglishTextProcessor()
+    else:
+        raise NotImplementedError()
+
+    collator = TTSColator(reduction_factor, audio_processor)
+
+    benchmark, benchmark_meta = get_speaker_incremental_benchmark(
+        datasets_root,
+        dataset_name,
+        data_folder,
+        metafile_name,
+        file_format,
+        speaker_lists,
+        audio_params,
+        reduction_factor,
+        audio_processor,
+        transcript_processor,
+        collator
+    )
 
     return benchmark, benchmark_meta
