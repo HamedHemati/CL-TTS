@@ -10,7 +10,8 @@ from cl_tts.benchmarks.datasets.multispeaker_dataset import MultiSpeakerDataset
 from cl_tts.benchmarks.datasets.dataset_utils.text_processors.\
     eng.english_text_proessor import EnglishTextProcessor
 from cl_tts.benchmarks.datasets.dataset_utils.collator import TTSColator
-
+from cl_tts.benchmarks.datasets.dataset_utils.phoneme_processors.g2p_en.g2p_en \
+    import G2PEN
 
 def get_speakers_dict(datasets_root, dataset_name, metafile_name):
     dataset_path = os.path.join(datasets_root, dataset_name)
@@ -120,9 +121,11 @@ def get_vctk_speaker_incremental_benchmark(
     # Text processor
     if input_type == "char":
         transcript_processor = EnglishTextProcessor()
+    elif input_type == "phoneme":
+        transcript_processor = G2PEN()
     else:
         raise NotImplementedError()
-
+    
     collator = TTSColator(reduction_factor, audio_processor)
 
     benchmark, benchmark_meta = get_speaker_incremental_benchmark(
@@ -160,6 +163,8 @@ def get_ljspeech_single_speaker_benchmark(
     # Text processor
     if input_type == "char":
         transcript_processor = EnglishTextProcessor()
+    elif input_type == "phoneme":
+        transcript_processor = G2PEN()
     else:
         raise NotImplementedError()
 

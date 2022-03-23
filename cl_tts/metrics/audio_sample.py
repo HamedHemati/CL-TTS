@@ -58,7 +58,7 @@ class AudioSampleMetric(PluginMetric[float]):
         speakers_list = self.speakerids_per_exp[current_exp]
         for speaker in speakers_list:
             transcript = self.transcript
-            inputs = self.transcript_processor(transcript)
+            inputs = self.transcript_processor.process_for_inference(transcript)
             inputs = torch.LongTensor(inputs).to(strategy.device).unsqueeze(0)
             input_lengths = torch.LongTensor(
                 [len(inputs[0])]).to(strategy.device)

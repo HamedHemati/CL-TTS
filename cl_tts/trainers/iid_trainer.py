@@ -112,7 +112,7 @@ class Trainer(BaseTrainer):
         speakers_list = self.benchmark_meta["speakerids_per_exp"][0]
 
         for speaker in speakers_list:
-            inputs = transcript_processor(transcript)
+            inputs = transcript_processor.process_for_inference(transcript)
             inputs = torch.LongTensor(inputs).to(self.device).unsqueeze(0)
             input_lengths = torch.LongTensor(
                 [len(inputs[0])]).to(self.device)

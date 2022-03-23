@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import importlib
 import itertools
+import time
 
 
 def load_params(yml_file_path):
@@ -49,6 +50,9 @@ def get_experiment_name(params):
     experiment_name = f'{params["trainer"]}_'
     experiment_name += f'{params["benchmark"]}_'
     experiment_name += f'{params["model_name"]}_'
-    experiment_name += f's{params["seed"]}'
+    experiment_name += f's{params["seed"]}_'
+
+    t_suff = time.strftime("%m%d%H%M%S")
+    experiment_name += f'_{t_suff}'
 
     return experiment_name

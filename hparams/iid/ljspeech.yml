@@ -10,25 +10,27 @@ LJSpeech-IID[Tac2NV]:
   audio_sample_transcript: "This is a sample text."
 
   seed: 0
-  train_mb_size: 80
+  train_mb_size: 64
   train_epochs: 100
 
   # ==================== Optimizer
   optimizer: "Adam"
   optimizer_params:
-    lr: 0.0001
+    lr: 0.0005
 
   # ==================== Benchmark
   benchmark: "LJSpeech-Single-Speaker"
   datasets_root: "/raid/hhemati/Datasets/Speech/CL-TTS"
   dataset_name: "LJSpeech-1.1"
   data_folder: "wavs"
+
   metafile_name: "metadata.txt"
+  input_type: "char"   # char/phoneme
+
   file_format: "wav"
   speaker_lists: [
     [ "lj_speaker"]
   ]
-  input_type: "char"   # char/phoneme
 
   # ==================== Model
   model_name: "Tacotron2NV"

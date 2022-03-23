@@ -11,3 +11,9 @@ class EnglishTextProcessor:
         encoded_text = [self.symbols.index(l) for l in text
                         if l in self.symbols]
         return encoded_text
+
+    def process_for_inference(self, text):
+        text = english_cleaners(text)
+        encoded_text = [self.symbols.index(l) for l in text
+                        if l in self.symbols]
+        return encoded_text
