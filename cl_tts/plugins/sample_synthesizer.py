@@ -6,7 +6,7 @@ from avalanche.evaluation.metric_results import MetricValue
 from cl_tts.utils.plot_utils import plot_spectrogram
 
 
-class AudioSampleMetric(PluginMetric[float]):
+class SampleSynthesizer(PluginMetric[float]):
     """
     This metric will return a `float` value after
     mini-batch.

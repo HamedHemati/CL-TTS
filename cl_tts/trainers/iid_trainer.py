@@ -4,7 +4,7 @@ from tqdm import tqdm
 import wandb
 import numpy as np
 from torch.utils.data import DataLoader
-
+from torch.nn.utils import clip_grad_norm_
 from .base_trainer import BaseTrainer
 from cl_tts.benchmarks.datasets.dataset_utils.sampler import BinnedLengthSampler
 from cl_tts.utils.plot_utils import plot_spectrogram, plot_attention
@@ -58,6 +58,7 @@ class Trainer(BaseTrainer):
                 out = self.forward_func(self.model, inputs, speaker_ids)
                 loss = self.criterion_func(out, inputs, speaker_ids)
                 loss.backward()
+                grad_norm = clip_grad_norm_(self.model.parameters(), 1.0)
                 self.optimizer.step()
 
                 # Logging

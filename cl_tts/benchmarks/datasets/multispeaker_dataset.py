@@ -99,9 +99,9 @@ class MultiSpeakerDataset(Dataset):
         # Trim silence
         if self.trim_margin_silence_thr != -1:
             waveform = self.ap.trim_margin_silence(
-                waveform,
+                waveform[0],
                 ref_level_db=self.trim_margin_silence_thr
-            )
+            ).unsqueeze(0)
 
         return transcript, waveform, speaker_id
 

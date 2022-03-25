@@ -1,6 +1,6 @@
 from cl_tts.utils.ap import AudioProcessor
-from .loss import LossMetric
-from .audio_sample import AudioSampleMetric
+from .loss_metric import LossMetric
+from .sample_synthesizer import SampleSynthesizer
 
 
 def get_metrics(metric_names, params, benchmark_meta, log_to_wandb):
@@ -11,7 +11,7 @@ def get_metrics(metric_names, params, benchmark_meta, log_to_wandb):
         elif metric_name == "audio_sample":
             transcript_processor = benchmark_meta["transcript_processor"]
             ap = AudioProcessor(benchmark_meta["ap_params"])
-            metric_list.append(AudioSampleMetric(
+            metric_list.append(SampleSynthesizer(
                 transcript_processor=transcript_processor,
                 ap=ap,
                 transcript=params["audio_sample_transcript"],
