@@ -7,7 +7,6 @@ def get_strategy(
         optimizer,
         forward_func,
         criterion_func,
-        collator,
         evaluation_plugin,
         device
 ):
@@ -33,7 +32,6 @@ def get_strategy(
             params=params,
             forward_func=forward_func,
             criterion_func=criterion_func,
-            collator=collator,
             num_workers=params["num_workers"],
             device=device,
             evaluator=evaluation_plugin,

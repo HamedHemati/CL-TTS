@@ -17,7 +17,6 @@ class BaseStrategy(BaseSGDTemplate):
             params: Dict,
             forward_func: Callable,
             criterion_func: Callable,
-            collator: Callable,
             *,
             num_workers: int = 4,
             device="cpu",
@@ -45,7 +44,6 @@ class BaseStrategy(BaseSGDTemplate):
 
         self.forward_func = forward_func
         self.criterion_func = criterion_func
-        self.collator = collator
         self.num_workers = num_workers
 
     def training_epoch(self, **kwargs):
@@ -54,7 +52,7 @@ class BaseStrategy(BaseSGDTemplate):
     def make_train_dataloader(self, **kwargs):
         self.dataloader = DataLoader(
             self.experience.dataset,
-            collate_fn=self.collator,
+            collate_fn=self.dataset.collate_fn,
             batch_size=self.train_mb_size,
             sampler=None,  # For now no sampler is supported
             num_workers=self.num_workers,

@@ -6,7 +6,7 @@ from avalanche.training.plugins import EvaluationPlugin
 from avalanche.logging import InteractiveLogger, WandBLogger
 
 from .base_trainer import BaseTrainer
-from cl_tts.metrics import get_metrics
+from cl_tts.plugins.metric_helpers import get_metrics
 from cl_tts.strategies import get_strategy
 
 
@@ -54,7 +54,6 @@ class BaseCLTrainer(BaseTrainer):
             self.optimizer,
             self.forward_func,
             self.criterion_func,
-            self.benchmark_meta["collator"],
             self.evaluation_plugin,
             self.device
         )

@@ -3,7 +3,7 @@ import yaml
 import torch
 
 from cl_tts.utils.generic import set_random_seed
-from cl_tts.models import get_model
+from cl_tts.models import get_model, get_model_config
 from cl_tts.benchmarks import get_benchmark
 
 
@@ -24,25 +24,31 @@ class BaseTrainer:
                                    torch.cuda.is_available() else "cpu")
         print("Device: ", self.device)
 
+        self.ds_path = os.path.join(params["datasets_root"],
+                                    params["dataset_name"])
+
+        # Config
+        config = get_model_config(params, self.ds_path)
+
         # Initialize benchmark
-        self.benchmark, self.benchmark_meta =\
-            get_benchmark(self.args, self.params)
-        self.benchmark_meta["ap_params"] = params["ap_params"]
+        self.benchmark, self.benchmark_meta, self.config =\
+            get_benchmark(params, self.ds_path, config)
 
         # Get model
-        n_symbols = self.benchmark_meta["n_symbols"]
-        n_speakers = self.benchmark_meta["n_speakers_dataset"]
-        self.model, self.forward_func, self.criterion_func = get_model(
+        self.model = get_model(
             params,
-            n_symbols,
-            n_speakers,
-            self.device
+            self.config,
+            self.benchmark_meta["ap"],
+            self.benchmark_meta["tokenizer"],
+            self.benchmark_meta["speaker_manager"],
         )
+
+        # TODO: Forward and Backward functions
 
         # Optimizer
         if params["optimizer"] == "Adam":
             self.optimizer = torch.optim.Adam(self.model.parameters(),
-                                         **params["optimizer_params"])
+                                              **params["optimizer_params"])
         else:
             raise NotImplementedError
 

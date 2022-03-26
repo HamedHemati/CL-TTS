@@ -36,7 +36,7 @@ class Trainer(BaseTrainer):
 
         dataloader = DataLoader(
             dataset,
-            collate_fn=self.benchmark_meta["collator"],
+            collate_fn=dataset.collate_fn,
             batch_size=self.params["train_mb_size"],
             sampler=sampler,  # For now no sampler is supported
             num_workers=0,

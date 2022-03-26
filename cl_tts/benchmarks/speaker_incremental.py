@@ -1,187 +1,124 @@
-import numpy as np
+
 import os
+import torch
+from avalanche.benchmarks.utils.avalanche_dataset import AvalancheDataset
+from avalanche.benchmarks import dataset_benchmark
+from TTS.tts.configs.shared_configs import BaseDatasetConfig
+from TTS.tts.datasets import load_tts_samples #, TTSDataset
+from TTS.tts.utils.speakers import SpeakerManager
+from TTS.utils.audio import AudioProcessor
+from TTS.tts.utils.text.tokenizer import TTSTokenizer
+from cl_tts.benchmarks.formatters import vctk
 
-from avalanche.benchmarks.generators import dataset_benchmark
-from avalanche.benchmarks.utils.avalanche_dataset import AvalancheDataset, \
-    AvalancheSubset
-
-from cl_tts.utils.ap import AudioProcessor
-from cl_tts.benchmarks.datasets.multispeaker_dataset import MultiSpeakerDataset
-from cl_tts.benchmarks.datasets.dataset_utils.text_processors.\
-    eng.english_text_proessor import EnglishTextProcessor
-from cl_tts.benchmarks.datasets.dataset_utils.collator import TTSColator
-from cl_tts.benchmarks.datasets.dataset_utils.phoneme_processors.g2p_en.g2p_en \
-    import G2PEN
-
-def get_speakers_dict(datasets_root, dataset_name, metafile_name):
-    dataset_path = os.path.join(datasets_root, dataset_name)
-    meta_data_path = os.path.join(dataset_path, metafile_name)
-    with open(meta_data_path) as file:
-        all_lines = file.readlines()
-    all_lines = [l.strip() for l in all_lines]
-    # Only keep valid speakers
-    all_lines = [l for l in all_lines]
-
-    # List of speakers (used as targets)
-    speakers = [l.split("|")[0] for l in all_lines]
-    speaker_to_id = {spk: i for i, spk in enumerate(set(speakers))}
-    return speaker_to_id
+from .dataset import ContinualTTSDataset
 
 
-def get_speaker_incremental_benchmark(
-        datasets_root,
-        dataset_name,
-        data_folder,
-        metafile_name,
-        file_format,
+def get_tts_dataset(config, samples, is_eval, ap, tokenizer):
+    dataset = ContinualTTSDataset(
+        outputs_per_step=config.r if "r" in config else 1,
+        compute_linear_spec=config.model.lower() == "tacotron" or
+                            config.compute_linear_spec,
+        compute_f0=config.get("compute_f0", False),
+        f0_cache_path=config.get("f0_cache_path", None),
+        samples=samples,
+        ap=ap,
+        return_wav=config.return_wav if "return_wav" in config else False,
+        batch_group_size=0 if is_eval else
+        config.batch_group_size * config.batch_size,
+        min_text_len=config.min_text_len,
+        max_text_len=config.max_text_len,
+        min_audio_len=config.min_audio_len,
+        max_audio_len=config.max_audio_len,
+        phoneme_cache_path=config.phoneme_cache_path,
+        precompute_num_workers=config.precompute_num_workers,
+        use_noise_augment=False if is_eval else config.use_noise_augment,
+        verbose=False,
+        # speaker_id_mapping=speaker_id_mapping,
+        # d_vector_mapping=d_vector_mapping if
+        # config.use_d_vector_file else None,
+        tokenizer=tokenizer,
+        start_by_longest=config.start_by_longest,
+        # language_id_mapping=language_id_mapping,
+    )
+
+    return dataset
+
+
+def speaker_incremental_benchmark(
         speaker_lists,
-        audio_params,
-        reduction_factor,
-        audio_processor,
-        transcript_processor,
-        collator
+        dataset_config,
+        config,
+        formatter,
+        ap,
+        tokenizer
 ):
-    speaker_to_id = get_speakers_dict(datasets_root, dataset_name,
-                                      metafile_name)
-    speaker_datasets = []
-    durations_per_exp = []
-    for speaker_list in speaker_lists:
+    train_samples, eval_samples = load_tts_samples(dataset_config,
+                                                   formatter=formatter,
+                                                   eval_split_size=0.01)
+
+    datasets_train_list = []
+    datasets_test_list = []
+    for speakers_i in speaker_lists:
         # Create dataset
-        multispk_dataset = MultiSpeakerDataset(
-            datasets_root,
-            dataset_name,
-            speaker_list,
-            speaker_to_id,
-            audio_processor,
-            trim_margin_silence_thr=audio_params["trim_margin_silence_thr"],
-            data_folder=data_folder,
-            metafile_name=metafile_name,
-            file_format=file_format,
-            transcript_processor=transcript_processor
+        train_samples_i = [x for x in train_samples if
+                           x["speaker_name"] in speakers_i]
+        test_samples_i = [x for x in eval_samples if
+                           x["speaker_name"] in speakers_i]
+
+        # Train dataset
+        dataset_train_i = get_tts_dataset(
+            config, train_samples_i, False, ap, tokenizer
         )
-        ds = AvalancheDataset(multispk_dataset)
+        dataset_train_i.targets = [-1] * len(dataset_train_i)
+        dataset_train_i.preprocess_samples()
+        dataset_train_i_avl = AvalancheDataset(dataset_train_i)
+        datasets_train_list.append(dataset_train_i_avl)
 
-        # Select indices for the target speaker
-        indices = []
-        for target_speaker in speaker_list:
-            indices_i = np.where(np.array(ds.targets) == target_speaker)[0]
-            indices.append(indices_i)
-        indices = np.concatenate(indices)
+        # Eval dataset
+        dataset_test_i = get_tts_dataset(
+            config, test_samples_i, True, ap, tokenizer
+        )
+        dataset_test_i.targets = [-1] * len(dataset_test_i)
+        dataset_eval_i_avl = AvalancheDataset(dataset_test_i)
+        datasets_test_list.append(dataset_eval_i_avl)
 
-        # Compute durations
-        durations = multispk_dataset.get_durations(indices=indices)
-        durations_per_exp.append(durations)
+    benchmark = dataset_benchmark(datasets_train_list, datasets_test_list)
 
-        # Target speaker dataset
-        ds_target_speaker = AvalancheSubset(ds, indices=indices)
-        speaker_datasets.append(ds_target_speaker)
-
-    benchmark = dataset_benchmark(speaker_datasets, speaker_datasets)
-
-    # Speakers in each experience
-    speakers_per_exp = []
-    speakerids_per_exp = []
-    for exp in benchmark.train_stream:
-        speakers = set(exp.dataset.targets)
-        speakers_per_exp.append(speakers)
-        speaker_ids = [speaker_to_id[spk] for spk in speakers]
-        speakerids_per_exp.append(speaker_ids)
-
-    benchmark_meta = {
-        "durations_per_exp": durations_per_exp,
-        "transcript_processor": transcript_processor,
-        "n_symbols": len(transcript_processor.symbols),
-        "n_speakers_benchmark": len(speaker_list),
-        "n_speakers_dataset": len(speaker_to_id.keys()),
-        "collator": collator,
-        "speakers_per_exp": speakers_per_exp,
-        "speakerids_per_exp": speakerids_per_exp,
-    }
-
-    return benchmark, benchmark_meta
+    return benchmark
 
 
 # ==========> Helper Functions
 
-# VCTK
-def get_vctk_speaker_incremental_benchmark(
-        datasets_root,
-        dataset_name,
-        data_folder,
-        metafile_name,
-        file_format,
+# VCTK - Speaker Incremental
+def get_vctk_spk_inc_benchmark(
         speaker_lists,
-        audio_params,
-        reduction_factor,
-        input_type,
+        ds_path,
+        config,
 ):
-    # Audio processor
-    audio_processor = AudioProcessor(audio_params)
-
-    # Text processor
-    if input_type == "char":
-        transcript_processor = EnglishTextProcessor()
-    elif input_type == "phoneme":
-        transcript_processor = G2PEN()
-    else:
-        raise NotImplementedError()
-    
-    collator = TTSColator(reduction_factor, audio_processor)
-
-    benchmark, benchmark_meta = get_speaker_incremental_benchmark(
-        datasets_root,
-        dataset_name,
-        data_folder,
-        metafile_name,
-        file_format,
-        speaker_lists,
-        audio_params,
-        reduction_factor,
-        audio_processor,
-        transcript_processor,
-        collator
+    ds_path = "/raid/hhemati/Datasets/Speech/CL-TTS/VCTK/"
+    dataset_config = BaseDatasetConfig(
+        name="vctk", path=ds_path, meta_file_train="metadata.txt"
     )
 
-    return benchmark, benchmark_meta
+    ap = AudioProcessor.init_from_config(config)
+    tokenizer, config = TTSTokenizer.init_from_config(config)
 
+    d_vectors_file_path = os.path.join(ds_path, "speaker_embedding_means.json")
+    speaker_manager = SpeakerManager(d_vectors_file_path=d_vectors_file_path)
 
-# LJSpeech
-def get_ljspeech_single_speaker_benchmark(
-        datasets_root,
-        dataset_name,
-        data_folder,
-        metafile_name,
-        file_format,
+    benchmark = speaker_incremental_benchmark(
         speaker_lists,
-        audio_params,
-        reduction_factor,
-        input_type,
-):
-    # Audio processor
-    audio_processor = AudioProcessor(audio_params)
-
-    # Text processor
-    if input_type == "char":
-        transcript_processor = EnglishTextProcessor()
-    elif input_type == "phoneme":
-        transcript_processor = G2PEN()
-    else:
-        raise NotImplementedError()
-
-    collator = TTSColator(reduction_factor, audio_processor)
-
-    benchmark, benchmark_meta = get_speaker_incremental_benchmark(
-        datasets_root,
-        dataset_name,
-        data_folder,
-        metafile_name,
-        file_format,
-        speaker_lists,
-        audio_params,
-        reduction_factor,
-        audio_processor,
-        transcript_processor,
-        collator
+        dataset_config,
+        config,
+        vctk,
+        ap,
+        tokenizer
     )
 
-    return benchmark, benchmark_meta
+    benchmark_meta = {
+        "tokenizer": tokenizer,
+        "ap": ap,
+        "speaker_manager": speaker_manager,
+    }
+
+    return benchmark, benchmark_meta, config
