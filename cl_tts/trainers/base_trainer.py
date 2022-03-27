@@ -32,6 +32,7 @@ class BaseTrainer:
         config = get_model_config(params, self.ds_path)
 
         # Initialize benchmark
+        self.config = update_config(config, self.params)
         self.benchmark, self.benchmark_meta, self.config =\
             get_benchmark(params, self.ds_path, config)
 
