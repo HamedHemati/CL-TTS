@@ -1,1 +1,1 @@
-from .metric_helpers import get_metrics
+from .plugin_helpers import get_plugins

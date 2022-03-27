@@ -44,14 +44,14 @@ if __name__ == "__main__":
     parser.add_argument('--dataset_root', type=str,
                         default='./benchmarks/datasets')
     parser.add_argument('--num_workers', type=int, default=5)
-    parser.add_argument('--hparams_path', type=str, required=True)
+    parser.add_argument('--params_path', type=str, required=True)
     parser.add_argument('--config', type=str, required=True)
     parser.add_argument('--wandb_proj', type=str, default="")
     parser.add_argument('--save_results', action='store_true', default=False)
     args = parser.parse_args()
     
     # Load params from YAML file
-    params = load_params(args.hparams_path)
+    params = load_params(args.params_path)
     params = params[args.config]
 
     params["num_workers"] = args.num_workers

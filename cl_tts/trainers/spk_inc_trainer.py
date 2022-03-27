@@ -11,7 +11,7 @@ class Trainer(BaseCLTrainer):
 
     def run(self):
         for itr_exp, exp in enumerate(self.benchmark.train_stream):
-            self.strategy.train(exp)
+            self.strategy.train(exp, num_workers=self.args.num_workers)
 
             # Save results
             if self.args.save_results:
@@ -19,5 +19,5 @@ class Trainer(BaseCLTrainer):
                                          f"ckpt_{itr_exp}.pt")
                 torch.save(self.strategy.model.state_dict(), ckpt_path)
 
-        if self.log_to_wandb:
+        if self.config.log_to_wandb:
             wandb.finish()

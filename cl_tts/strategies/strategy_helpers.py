@@ -3,37 +3,22 @@ from .naive import Naive
 
 def get_strategy(
         params,
+        config,
         model,
         optimizer,
-        forward_func,
-        criterion_func,
+        criterion,
+        plugins,
         evaluation_plugin,
         device
 ):
-    """
-    Initializes strategy for a given model.
 
-    :param params:
-    :param model:
-    :param optimizer:
-    :param forward_func:
-    :param criterion_func:
-    :param collator:
-    :param evaluation_plugin:
-    :param device:
-    :return:
-    """
-
-    strategy = None
     if params["strategy"] == "naive":
         strategy = Naive(
-            model=model,
-            optimizer=optimizer,
-            params=params,
-            forward_func=forward_func,
-            criterion_func=criterion_func,
-            num_workers=params["num_workers"],
+            model, optimizer, criterion,
+            train_mb_size=config.batch_size,
+            train_epochs=config.epochs,
             device=device,
+            plugins=plugins,
             evaluator=evaluation_plugin,
         )
     else:

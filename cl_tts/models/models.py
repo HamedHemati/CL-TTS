@@ -8,7 +8,7 @@ def get_model(
         tokenizer,
         speaker_manager,
 ):
-    if params["model_name"] == "Tacotron2":
+    if params["model"] == "tacotron2":
         model = Tacotron2(
             config,
             ap,

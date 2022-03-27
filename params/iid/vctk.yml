@@ -1,19 +1,16 @@
-vctk-si[tac2]:
+vctk-iid[tac2]:
   description: ""
   tunable_parameters: Null
 
   # Training
-  trainer: "spk_inc_trainer"
+  trainer: "iid_trainer"
   seed: 0
-  epochs: 50
+  epochs: 400
   batch_size: 64
   metrics: ["loss"]
   plugins: ["grad_clipper", "sample_synthesizer"]
   grad_clip: 5.0
   synthesize_samples_every: 10
-
-  # Strategy
-  strategy: "naive"
 
   # Data
   eval_split_size: 2.269117313365101e-05

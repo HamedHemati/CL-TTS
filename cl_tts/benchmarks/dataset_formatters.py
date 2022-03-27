@@ -1,7 +1,7 @@
 import os
 
 
-def vctk(root_path, meta_file, **kwargs):  # pylint: disable=unused-argument
+def vctk(root_path, meta_file, **kwargs):
     meta_data_path = os.path.join(root_path, meta_file)
     with open(meta_data_path) as file:
         all_lines = file.readlines()

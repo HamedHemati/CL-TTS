@@ -6,7 +6,8 @@ from avalanche.training.plugins import EvaluationPlugin
 from avalanche.logging import InteractiveLogger, WandBLogger
 
 from .base_trainer import BaseTrainer
-from cl_tts.plugins.metric_helpers import get_metrics
+from cl_tts.metrics import get_metrics
+from cl_tts.plugins import get_plugins
 from cl_tts.strategies import get_strategy
 
 
@@ -22,8 +23,7 @@ class BaseCLTrainer(BaseTrainer):
         # ====================================
         # Initialize loggers
         loggers = [InteractiveLogger()]
-        self.log_to_wandb = args.wandb_proj != ""
-        if self.log_to_wandb:
+        if self.config.log_to_wandb:
             config = copy.copy(params)
             config.update(vars(args))
             wandb_logger = WandBLogger(
@@ -35,8 +35,7 @@ class BaseCLTrainer(BaseTrainer):
 
         # Initialize metrics
         metrics = params["metrics"]
-        metrics_list = get_metrics(metrics, self.params, self.benchmark_meta,
-                                   self.log_to_wandb)
+        metrics_list = get_metrics(metrics, self.params)
 
         # Set evaluation plugin
         self.evaluation_plugin = EvaluationPlugin(
@@ -45,15 +44,19 @@ class BaseCLTrainer(BaseTrainer):
             benchmark=self.benchmark
         )
 
+        # Plugins
+        self.plugins = get_plugins(self.params["plugins"])
+
         # ====================================
         #              Strategy
         # ====================================
         self.strategy = get_strategy(
             self.params,
+            self.config,
             self.model,
             self.optimizer,
-            self.forward_func,
-            self.criterion_func,
+            self.criterion,
+            self.plugins,
             self.evaluation_plugin,
             self.device
         )

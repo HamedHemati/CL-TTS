@@ -1,40 +1,38 @@
-from typing import Dict, Callable
+from typing import Sequence, Optional
 
-import torch
 from torch.nn import Module
 from torch.optim import Optimizer
 
 from avalanche.training.plugins import EvaluationPlugin
 from avalanche.training.plugins.evaluation import default_evaluator
 
-from .base_strategy import BaseStrategy
+from .base_tts_strategy import BaseTTSStrategy
 
 
-class Naive(BaseStrategy):
+class Naive(BaseTTSStrategy):
     def __init__(
             self,
             model: Module,
             optimizer: Optimizer,
-            params: Dict,
-            forward_func: Callable,
-            criterion_func: Callable,
-            *,
-            num_workers: int = 4,
+            criterion: Module,
+            train_mb_size: int = 1,
+            train_epochs: int = 1,
+            eval_mb_size: int = 1,
             device="cpu",
-            plugins=None,
+            plugins: Optional[Sequence["SupervisedPlugin"]] = None,
             evaluator: EvaluationPlugin = default_evaluator,
+            eval_every=-1,
+            peval_mode="epoch",
     ):
-        super(Naive, self).__init__(
-            model=model,
-            optimizer=optimizer,
-            params=params,
-            forward_func=forward_func,
-            criterion_func=criterion_func,
-            num_workers=num_workers,
-            device=device,
-            plugins=plugins,
-            evaluator=evaluator
-        )
+        super().__init__(model, optimizer, criterion,
+                         train_mb_size=train_mb_size,
+                         train_epochs=train_epochs,
+                         eval_mb_size=eval_mb_size,
+                         device=device,
+                         plugins=plugins,
+                         evaluator=evaluator,
+                         eval_every=eval_every,
+                         peval_mode=peval_mode)
 
     def training_epoch(self, **kwargs):
         """
@@ -54,12 +52,12 @@ class Naive(BaseStrategy):
 
             # Forward
             self._before_forward(**kwargs)
-            self.mb_output = self.forward()
+            self.mb_outputs, self.mb_loss_dict = self.forward()
             self._after_forward(**kwargs)
 
-            # Loss & Backward
-            self.loss += self.criterion()
+            self.loss += self.mb_loss_dict["loss"]
 
+            # Loss & Backward
             self._before_backward(**kwargs)
             self.loss.backward()
             self._after_backward(**kwargs)

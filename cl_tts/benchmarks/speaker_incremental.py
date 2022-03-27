@@ -4,12 +4,12 @@ import torch
 from avalanche.benchmarks.utils.avalanche_dataset import AvalancheDataset
 from avalanche.benchmarks import dataset_benchmark
 from TTS.tts.configs.shared_configs import BaseDatasetConfig
-from TTS.tts.datasets import load_tts_samples #, TTSDataset
+from TTS.tts.datasets import load_tts_samples
 from TTS.tts.utils.speakers import SpeakerManager
 from TTS.utils.audio import AudioProcessor
 from TTS.tts.utils.text.tokenizer import TTSTokenizer
-from cl_tts.benchmarks.formatters import vctk
 
+from cl_tts.benchmarks.dataset_formatters import vctk
 from .dataset import ContinualTTSDataset
 
 
@@ -52,20 +52,19 @@ def speaker_incremental_benchmark(
         ap,
         tokenizer
 ):
-    train_samples, eval_samples = load_tts_samples(dataset_config,
-                                                   formatter=formatter,
-                                                   eval_split_size=0.01)
+    train_samples, eval_samples = load_tts_samples(
+        dataset_config,
+        formatter=formatter,
+        eval_split_size=config.eval_split_size
+    )
 
     datasets_train_list = []
     datasets_test_list = []
     for speakers_i in speaker_lists:
-        # Create dataset
+        # Train dataset
         train_samples_i = [x for x in train_samples if
                            x["speaker_name"] in speakers_i]
-        test_samples_i = [x for x in eval_samples if
-                           x["speaker_name"] in speakers_i]
 
-        # Train dataset
         dataset_train_i = get_tts_dataset(
             config, train_samples_i, False, ap, tokenizer
         )
@@ -74,11 +73,12 @@ def speaker_incremental_benchmark(
         dataset_train_i_avl = AvalancheDataset(dataset_train_i)
         datasets_train_list.append(dataset_train_i_avl)
 
-        # Eval dataset
+        # Test dataset
+        test_samples_i = []
         dataset_test_i = get_tts_dataset(
             config, test_samples_i, True, ap, tokenizer
         )
-        dataset_test_i.targets = [-1] * len(dataset_test_i)
+        dataset_test_i.targets = []
         dataset_eval_i_avl = AvalancheDataset(dataset_test_i)
         datasets_test_list.append(dataset_eval_i_avl)
 
@@ -95,7 +95,6 @@ def get_vctk_spk_inc_benchmark(
         ds_path,
         config,
 ):
-    ds_path = "/raid/hhemati/Datasets/Speech/CL-TTS/VCTK/"
     dataset_config = BaseDatasetConfig(
         name="vctk", path=ds_path, meta_file_train="metadata.txt"
     )

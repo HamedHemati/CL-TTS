@@ -6,9 +6,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 from torch.nn.utils import clip_grad_norm_
 from .base_trainer import BaseTrainer
-from cl_tts.benchmarks.datasets.dataset_utils.sampler import BinnedLengthSampler
 from cl_tts.utils.plot_utils import plot_spectrogram, plot_attention
-from cl_tts.utils.ap import AudioProcessor
 
 
 class Trainer(BaseTrainer):
@@ -19,58 +17,56 @@ class Trainer(BaseTrainer):
         super().__init__(args, params, experiment_name)
 
         self.model.to(self.device)
-        self.log_to_wandb = args.wandb_proj != ""
-        self.ap = AudioProcessor(self.benchmark_meta["ap_params"])
-        if self.log_to_wandb:
+        self.config.log_to_wandb = args.wandb_proj != ""
+        if self.config.log_to_wandb:
             wandb.init(
                 project=self.args.wandb_proj,
                 config=self.params,
                 name=experiment_name)
+        self.global_step = 0
 
     def run(self):
         dataset = self.benchmark.train_stream[0].dataset
-        durations = self.benchmark_meta["durations_per_exp"][0]
-        sampler = BinnedLengthSampler(durations,
-                                      self.params["train_mb_size"],
-                                      self.params["train_mb_size"])
 
         dataloader = DataLoader(
             dataset,
             collate_fn=dataset.collate_fn,
-            batch_size=self.params["train_mb_size"],
-            sampler=sampler,  # For now no sampler is supported
-            num_workers=0,
-            drop_last=False,
+            batch_size=self.config.batch_size,
+            sampler=None,
+            num_workers=self.args.num_workers,
             pin_memory=True,
-            shuffle=False
+            shuffle=True
         )
 
-        self.global_step = 0
-
-        for epoch in range(self.params["train_epochs"]):
+        for epoch in range(self.config.epochs):
             pbar = tqdm(dataloader)
 
             epoch_losses = []
             for mbatch in pbar:
-                self.mbatch_to_device(mbatch)
-                inputs, speaker_ids = mbatch
+                self._unpack_minibatch(mbatch)
                 self.optimizer.zero_grad()
-                out = self.forward_func(self.model, inputs, speaker_ids)
-                loss = self.criterion_func(out, inputs, speaker_ids)
+                outputs, loss_dict = self.model.train_step(
+                    self.mbatch,
+                    self.criterion
+                )
+                loss = loss_dict["loss"]
                 loss.backward()
-                grad_norm = clip_grad_norm_(self.model.parameters(), 1.0)
+
+                if self.model.config.grad_clip > 0.0:
+                    grad_norm = clip_grad_norm_(self.model.parameters(),
+                                                self.model.config.grad_clip)
                 self.optimizer.step()
 
                 # Logging
                 pbar.set_description(
                     f"Epoch: {epoch} - Loss: {loss.item():.2f}")
-                if self.log_to_wandb:
+                if self.config.log_to_wandb:
                     wandb.log({"Step Loss": loss.item()}, step=self.global_step)
                 epoch_losses.append(loss.item())
 
                 self.global_step += 1
 
-            if self.log_to_wandb:
+            if self.config.log_to_wandb:
                 epoch_loss = np.mean(epoch_losses)
                 wandb.log({"Epoch Loss": epoch_loss}, step=self.global_step)
 
@@ -78,17 +74,27 @@ class Trainer(BaseTrainer):
                 if epoch % 5 == 0:
                     self.save_checkpoint(epoch)
 
-            if epoch % self.params["synthesize_every"] == 0:
+            if epoch % self.config.synthesize_samples_every == 0:
                 self.synthesize_samples(current_epoch=epoch)
 
-        if self.log_to_wandb:
+        if self.config.log_to_wandb:
             wandb.finish()
 
-    def mbatch_to_device(self, mbatch):
+    def _unpack_minibatch(self, mbatch):
         """Move to device"""
-        for k in mbatch[0].keys():
-            mbatch[0][k] = mbatch[0][k].to(self.device)
-        mbatch[1] = mbatch[1].to(self.device)
+        self.mbatch = self.model.format_batch(mbatch)
+
+        # Add speaker embedding to the batch
+        speaker_embeddings = [
+            self.model.speaker_manager.get_d_vectors_by_speaker(spk) for spk in
+            self.mbatch["speaker_names"]]
+        speaker_embeddings = torch.FloatTensor(speaker_embeddings).squeeze(1)
+        self.mbatch["d_vectors"] = speaker_embeddings.to(self.device)
+
+        # Move to compute device
+        for k in self.mbatch.keys():
+            if isinstance(self.mbatch[k], torch.Tensor):
+                self.mbatch[k] = self.mbatch[k].to(self.device)
 
     def save_checkpoint(self, epoch):
         checkpoint_path = os.path.join(self.checkpoints_path,
@@ -108,43 +114,46 @@ class Trainer(BaseTrainer):
                 print(f"Could not load weights for {name}")
 
     def synthesize_samples(self, current_epoch):
-        transcript_processor = self.benchmark_meta["transcript_processor"]
-        transcript = self.params["audio_sample_transcript"]
-        speakers_list = self.benchmark_meta["speakerids_per_exp"][0]
+        for spk in self.model.config.speaker_lists[0]:
+            spk_emb = \
+                self.model.speaker_manager.get_d_vectors_by_speaker(spk)
+            spk_emb = torch.FloatTensor(spk_emb).squeeze(1).to(self.device)
 
-        for speaker in speakers_list:
-            inputs = transcript_processor.process_for_inference(transcript)
-            inputs = torch.LongTensor(inputs).to(self.device).unsqueeze(0)
-            input_lengths = torch.LongTensor(
-                [len(inputs[0])]).to(self.device)
-            speaker_ids = torch.LongTensor([speaker]).to(self.device)
+            text = self.model.config.test_sentences[0]
+            text_inputs = self.model.tokenizer.text_to_ids(text)
+            text_inputs = \
+                torch.LongTensor(text_inputs).unsqueeze(0).to(self.device)
+
+            aux_input = {"d_vectors": spk_emb}
 
             self.model.eval()
             with torch.no_grad():
-                out = self.model.infer(inputs, input_lengths, speaker_ids)
+                outputs = self.model.inference(text_inputs,
+                                                   aux_input=aux_input)
             self.model.train()
 
-            mel = out[0].squeeze(0).detach()
-            attn = out[2].squeeze(0).detach()
-
-            if self.log_to_wandb:
-                audio = self.ap.mel_to_wav(mel.unsqueeze(0).cpu())[0]
-                step = self.global_step
+            if self.model.config.log_to_wandb:
+                mel = outputs["model_outputs"][0].detach().cpu().numpy().T
+                wav = self.model.ap.inv_melspectrogram(mel)
                 wandb.log(
-                    {f"Audio": wandb.Audio(
-                        audio,
-                        caption=transcript,
-                        sample_rate=self.ap.params["sample_rate"])},
-                    step=step)
+                    {f"Audio-Epoch{current_epoch}-{spk}": wandb.Audio(
+                        wav,
+                        caption=text,
+                        sample_rate=self.model.ap.sample_rate)},
+                    step=self.global_step)
 
-                fig = plot_spectrogram(mel.cpu().numpy())
+                fig = plot_spectrogram(mel)
                 wandb.log(
-                    {f"Mel": fig},
-                    step=step
+                    {f"Mel-Epoch{current_epoch}-{spk}": fig},
+                    step=self.global_step
                 )
 
+                attn = outputs["alignments"][0]
                 fig = plot_attention(attn.cpu().numpy())
                 wandb.log(
-                    {f"Attn": fig},
-                    step=step
+                    {f"Attn-Epoch{current_epoch}-{spk}": fig},
+                    step=self.global_step
                 )
+
+            # synthesize only for the first speaker
+            break

@@ -1,8 +1,9 @@
 import os
 import yaml
 import torch
+from trainer import get_optimizer
 
-from cl_tts.utils.generic import set_random_seed
+from cl_tts.utils.generic import set_random_seed, update_config
 from cl_tts.models import get_model, get_model_config
 from cl_tts.benchmarks import get_benchmark
 
@@ -14,25 +15,29 @@ class BaseTrainer:
     def __init__(self, args, params, experiment_name):
         self.params = params
 
+        # Seed
         set_random_seed(params["seed"])
-        self.args = args
-        self.params = params
-        self.experiment_name = experiment_name
 
         # Set compute device
         self.device = torch.device("cuda" if
                                    torch.cuda.is_available() else "cpu")
         print("Device: ", self.device)
 
+        # Params
+        self.args = args
+        self.params = params
         self.ds_path = os.path.join(params["datasets_root"],
                                     params["dataset_name"])
-
-        # Config
+        self.experiment_name = experiment_name
         config = get_model_config(params, self.ds_path)
 
         # Initialize benchmark
         self.benchmark, self.benchmark_meta, self.config =\
             get_benchmark(params, self.ds_path, config)
+
+        # Update config
+        self.config = update_config(config, self.params)
+        self.config.log_to_wandb = self.args.wandb_proj != ""
 
         # Get model
         self.model = get_model(
@@ -43,14 +48,16 @@ class BaseTrainer:
             self.benchmark_meta["speaker_manager"],
         )
 
-        # TODO: Forward and Backward functions
-
         # Optimizer
-        if params["optimizer"] == "Adam":
-            self.optimizer = torch.optim.Adam(self.model.parameters(),
-                                              **params["optimizer_params"])
-        else:
-            raise NotImplementedError
+        self.optimizer = get_optimizer(
+            optimizer_name=config.optimizer,
+            optimizer_params=config.optimizer_params,
+            lr=config.lr,
+            model=self.model,
+        )
+
+        # Criterion
+        self.criterion = self.model.get_criterion()
 
         # Results
         if self.args.save_results:

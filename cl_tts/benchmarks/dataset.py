@@ -1,7 +1,7 @@
-from typing import Dict, List, Union
+from typing import Dict, List
 
 from TTS.utils.audio import AudioProcessor
-from TTS.tts.datasets import load_tts_samples, TTSDataset
+from TTS.tts.datasets import TTSDataset
 
 
 class ContinualTTSDataset(TTSDataset):

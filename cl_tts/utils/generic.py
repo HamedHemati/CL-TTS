@@ -49,10 +49,17 @@ def get_trainer(trainer_name):
 def get_experiment_name(params):
     experiment_name = f'{params["trainer"]}_'
     experiment_name += f'{params["benchmark"]}_'
-    experiment_name += f'{params["model_name"]}_'
+    experiment_name += f'{params["model"]}_'
     experiment_name += f's{params["seed"]}_'
 
     t_suff = time.strftime("%m%d%H%M%S")
-    experiment_name += f'_{t_suff}'
+    experiment_name += f'{t_suff}'
 
     return experiment_name
+
+
+def update_config(config, params):
+    for k in params.keys():
+        setattr(config, k, params[k])
+
+    return config
