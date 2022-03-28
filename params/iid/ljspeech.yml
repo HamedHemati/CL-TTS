@@ -1,0 +1,30 @@
+ljspeech-iid[tac2]:
+  description: ""
+  tunable_parameters: Null
+
+  # Training
+  trainer: "iid_trainer"
+  seed: 0
+  epochs: 400
+  batch_size: 64
+  metrics: ["loss"]
+  plugins: ["grad_clipper", "sample_synthesizer"]
+  grad_clip: 5.0
+  synthesize_samples_every: 10
+
+  # Data
+  eval_split_size: 7.633587786259542e-05
+  use_phonemes: True
+  phoneme_language: "en-us"
+  datasets_root: "/raid/hhemati/Datasets/Speech/CL-TTS"
+  dataset_name: "LJSpeech-1.1"
+  benchmark: "ljspeech-spk-inc"
+  speaker_lists:
+    [
+      ["lj_speaker"]
+    ]
+
+  # Model
+  model: "tacotron2"
+  use_d_vector_file: True
+  d_vector_dim: 256
