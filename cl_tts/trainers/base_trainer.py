@@ -3,8 +3,8 @@ import yaml
 import torch
 from trainer import get_optimizer
 
-from cl_tts.utils.generic import set_random_seed, update_config
-from cl_tts.models import get_model, get_model_config
+from cl_tts.utils.generic import set_random_seed
+from cl_tts.models import get_models
 from cl_tts.benchmarks import get_benchmark
 
 
@@ -29,31 +29,23 @@ class BaseTrainer:
         self.ds_path = os.path.join(params["datasets_root"],
                                     params["dataset_name"])
         self.experiment_name = experiment_name
-        config = get_model_config(params, self.ds_path)
+        self.config, self.model, self.vocoder = \
+            get_models(params, self.ds_path)
+
+        self.model.vocoder = self.vocoder
 
         # Initialize benchmark
-        self.config = update_config(config, self.params)
-        self.benchmark, self.benchmark_meta, self.config =\
-            get_benchmark(params, self.ds_path, config)
-
+        self.benchmark = get_benchmark(params, self.ds_path,
+                                       self.config, self.model.ap,
+                                       self.model.tokenizer)
         # Update config
-        self.config = update_config(config, self.params)
         self.config.log_to_wandb = self.args.wandb_proj != ""
-
-        # Get model
-        self.model = get_model(
-            params,
-            self.config,
-            self.benchmark_meta["ap"],
-            self.benchmark_meta["tokenizer"],
-            self.benchmark_meta["speaker_manager"],
-        )
 
         # Optimizer
         self.optimizer = get_optimizer(
-            optimizer_name=config.optimizer,
-            optimizer_params=config.optimizer_params,
-            lr=config.lr,
+            optimizer_name=self.config.optimizer,
+            optimizer_params=self.config.optimizer_params,
+            lr=self.config.lr,
             model=self.model,
         )
 

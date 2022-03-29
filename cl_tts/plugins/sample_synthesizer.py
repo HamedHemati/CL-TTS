@@ -47,11 +47,17 @@ class SampleSynthesizer(SupervisedPlugin):
 
             if strategy.model.config.log_to_wandb:
                 mel = outputs["model_outputs"][0].detach().cpu().numpy().T
-                wav = strategy.model.ap.inv_melspectrogram(mel)
+                mel = outputs["model_outputs"][0].detach().cpu().numpy().T
+                mel = strategy.model.ap.denormalize(mel).T
+                vocoder_input = strategy.model.vocoder.ap.normalize(mel.T)
+                vocoder_input = torch.tensor(vocoder_input).unsqueeze(0)
+                waveform = strategy.model.vocoder.inference(vocoder_input)
+                waveform = waveform.cpu().squeeze().numpy()
+
                 step = strategy.clock.train_iterations
                 wandb.log(
                     {f"Audio-Exp{current_exp}-{spk}": wandb.Audio(
-                        wav,
+                        waveform,
                         caption=text,
                         sample_rate=strategy.model.ap.sample_rate)},
                     step=step)

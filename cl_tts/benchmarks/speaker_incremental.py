@@ -6,8 +6,7 @@ from avalanche.benchmarks import dataset_benchmark
 from TTS.tts.configs.shared_configs import BaseDatasetConfig
 from TTS.tts.datasets import load_tts_samples
 from TTS.tts.utils.speakers import SpeakerManager
-from TTS.utils.audio import AudioProcessor
-from TTS.tts.utils.text.tokenizer import TTSTokenizer
+
 
 from cl_tts.benchmarks.dataset_formatters import vctk, ljspeech
 from .dataset import ContinualTTSDataset
@@ -94,16 +93,12 @@ def get_vctk_spk_inc_benchmark(
         speaker_lists,
         ds_path,
         config,
+        ap,
+        tokenizer
 ):
     dataset_config = BaseDatasetConfig(
         name="vctk", path=ds_path, meta_file_train="metadata.txt"
     )
-
-    ap = AudioProcessor.init_from_config(config)
-    tokenizer, config = TTSTokenizer.init_from_config(config)
-
-    d_vectors_file_path = os.path.join(ds_path, "speaker_embedding_means.json")
-    speaker_manager = SpeakerManager(d_vectors_file_path=d_vectors_file_path)
 
     benchmark = speaker_incremental_benchmark(
         speaker_lists,
@@ -114,13 +109,7 @@ def get_vctk_spk_inc_benchmark(
         tokenizer
     )
 
-    benchmark_meta = {
-        "tokenizer": tokenizer,
-        "ap": ap,
-        "speaker_manager": speaker_manager,
-    }
-
-    return benchmark, benchmark_meta, config
+    return benchmark
 
 
 # LJSpeech - Speaker Incremental
@@ -128,16 +117,12 @@ def get_ljspeech_spk_inc_benchmark(
         speaker_lists,
         ds_path,
         config,
+        ap,
+        tokenizer
 ):
     dataset_config = BaseDatasetConfig(
         name="ljspeech", path=ds_path, meta_file_train="metadata.txt"
     )
-
-    ap = AudioProcessor.init_from_config(config)
-    tokenizer, config = TTSTokenizer.init_from_config(config)
-
-    d_vectors_file_path = os.path.join(ds_path, "speaker_embedding_means.json")
-    speaker_manager = SpeakerManager(d_vectors_file_path=d_vectors_file_path)
 
     benchmark = speaker_incremental_benchmark(
         speaker_lists,
@@ -148,11 +133,4 @@ def get_ljspeech_spk_inc_benchmark(
         tokenizer
     )
 
-    benchmark_meta = {
-        "tokenizer": tokenizer,
-        "ap": ap,
-        "speaker_manager": speaker_manager,
-    }
-
-    return benchmark, benchmark_meta, config
-
+    return benchmark

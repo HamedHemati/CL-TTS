@@ -14,8 +14,6 @@ vctk-iid[tac2]:
 
   # Data
   eval_split_size: 2.269117313365101e-05
-  use_phonemes: True
-  phoneme_language: "en-us"
   datasets_root: "/raid/hhemati/Datasets/Speech/CL-TTS"
   dataset_name: "VCTK"
   benchmark: "vctk-spk-inc"
@@ -32,6 +30,15 @@ vctk-iid[tac2]:
     ]
 
   # Model
+  use_phonemes: True
+  phoneme_language: "en-us"
+
+  pretrained_tts_model: "tts_models/en/ljspeech/tacotron2-DCA"
+  pretrained_vocoder: "vocoder_models/universal/libri-tts/fullband-melgan"
+  model_manager_output_prefix: "./data/pretrained_models/"
   model: "tacotron2"
   use_d_vector_file: True
   d_vector_dim: 256
+
+  sample_rate: 24000
+  resample: True

@@ -5,8 +5,8 @@ vctk-si[tac2]:
   # Training
   trainer: "spk_inc_trainer"
   seed: 0
-  epochs: 50
-  batch_size: 64
+  epochs: 80
+  batch_size: 32
   metrics: ["loss"]
   plugins: ["grad_clipper", "sample_synthesizer"]
   grad_clip: 5.0
@@ -17,24 +17,32 @@ vctk-si[tac2]:
 
   # Data
   eval_split_size: 2.269117313365101e-05
-  use_phonemes: True
-  phoneme_language: "en-us"
   datasets_root: "/raid/hhemati/Datasets/Speech/CL-TTS"
   dataset_name: "VCTK"
   benchmark: "vctk-spk-inc"
   speaker_lists:
     [
-      [ "vctk_p225", "vctk_p229", "vctk_p233", "vctk_p238", "vctk_p243",
-        "vctk_p247", "vctk_p251", "vctk_p255", "vctk_p259", "vctk_p263",
-        "vctk_p267", "vctk_p271", "vctk_p275", "vctk_p279", "vctk_p283",
-        "vctk_p287", "vctk_p294", "vctk_p299", "vctk_p303", "vctk_p307",
-        "vctk_p312", "vctk_p317", "vctk_p329", "vctk_p335", "vctk_p341",
-        "vctk_p351", "vctk_p363", "vctk_p226", "vctk_p230", "vctk_p234" ],
+      [ "vctk_p225" ],
+      [ "vctk_p229" ],
+      [ "vctk_p299" ],
+      [ "vctk_p329" ],
+      [ "vctk_p335" ],
+      [ "vctk_p307" ],
+      [ "vctk_p234" ],
       [ "vctk_p362" ],
       [ "vctk_p376" ]
     ]
 
   # Model
+  use_phonemes: True
+  phoneme_language: "en-us"
+
+  pretrained_tts_model: "tts_models/en/ljspeech/tacotron2-DCA"
+  pretrained_vocoder: "vocoder_models/universal/libri-tts/fullband-melgan"
+  model_manager_output_prefix: "./data/pretrained_models/"
   model: "tacotron2"
   use_d_vector_file: True
   d_vector_dim: 256
+
+  sample_rate: 24000
+  resample: True
